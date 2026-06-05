@@ -1,0 +1,688 @@
+/* ============================================================
+   Chess — Modern Web Edition
+   Theme engine: all visual tokens live in CSS custom properties
+   exposed on :root and overridden per [data-theme] attribute.
+   ============================================================ */
+
+:root {
+  /* App surfaces */
+  --bg-app: #f5efe6;
+  --bg-panel: #ffffff;
+  --text-primary: #1f1a14;
+  --text-muted: #7a6f60;
+  --border: #e6dccb;
+
+  /* Accent */
+  --accent: #8b5a2b;
+  --accent-foreground: #ffffff;
+
+  /* Board squares */
+  --bg-square-light: #f0d9b5;
+  --bg-square-dark: #b58863;
+
+  /* Highlights */
+  --hl-selected: rgba(255, 235, 130, 0.65);
+  --hl-move: rgba(20, 85, 30, 0.45);
+  --hl-move-dot: rgba(20, 85, 30, 0.55);
+  --hl-lastmove: rgba(255, 200, 80, 0.45);
+  --hl-check: rgba(220, 30, 30, 0.65);
+  --hl-valid-ring: rgba(0, 0, 0, 0.18);
+  --hl-capture: rgba(220, 30, 30, 0.45);
+
+  /* Piece color (single tint; dark pieces by default) */
+  --piece-color: #1a1a1a;
+  --piece-shadow: rgba(0, 0, 0, 0.25);
+  --piece-light: #fafafa;
+  --piece-dark: #1a1a1a;
+
+  /* Glow used by cyber theme */
+  --glow: none;
+}
+
+/* ---- Classic Wood ---- */
+[data-theme="classic"] {
+  --bg-app: #f5efe6;
+  --bg-panel: #ffffff;
+  --text-primary: #1f1a14;
+  --text-muted: #7a6f60;
+  --border: #e6dccb;
+  --accent: #8b5a2b;
+  --accent-foreground: #ffffff;
+  --bg-square-light: #f0d9b5;
+  --bg-square-dark: #b58863;
+  --hl-selected: rgba(255, 235, 130, 0.7);
+  --hl-move: rgba(20, 85, 30, 0.45);
+  --hl-move-dot: rgba(20, 85, 30, 0.6);
+  --hl-lastmove: rgba(255, 200, 80, 0.5);
+  --hl-check: rgba(220, 30, 30, 0.65);
+  --piece-light: #ffffff;
+  --piece-dark: #1a1a1a;
+}
+
+/* ---- Neo Cyber ---- */
+[data-theme="cyber"] {
+  --bg-app: #0a0e1a;
+  --bg-panel: #111728;
+  --text-primary: #e6f1ff;
+  --text-muted: #6b87a8;
+  --border: #1e2a44;
+  --accent: #00e5ff;
+  --accent-foreground: #001017;
+  --bg-square-light: #1a2238;
+  --bg-square-dark: #0e1424;
+  --hl-selected: rgba(0, 229, 255, 0.35);
+  --hl-move: rgba(0, 229, 255, 0.25);
+  --hl-move-dot: rgba(0, 229, 255, 0.85);
+  --hl-lastmove: rgba(123, 92, 255, 0.4);
+  --hl-check: rgba(255, 60, 90, 0.75);
+  --hl-valid-ring: rgba(0, 229, 255, 0.4);
+  --hl-capture: rgba(255, 60, 90, 0.45);
+  --piece-light: #f0fbff;
+  --piece-dark: #0a0e1a;
+  --glow: 0 0 12px rgba(0, 229, 255, 0.45);
+}
+
+/* ---- Minimalist Stark ---- */
+[data-theme="stark"] {
+  --bg-app: #ffffff;
+  --bg-panel: #ffffff;
+  --text-primary: #0a0a0a;
+  --text-muted: #737373;
+  --border: #e5e5e5;
+  --accent: #0a0a0a;
+  --accent-foreground: #ffffff;
+  --bg-square-light: #ffffff;
+  --bg-square-dark: #0a0a0a;
+  --hl-selected: rgba(0, 0, 0, 0.08);
+  --hl-move: rgba(0, 0, 0, 0.06);
+  --hl-move-dot: rgba(0, 0, 0, 0.55);
+  --hl-lastmove: rgba(0, 0, 0, 0.12);
+  --hl-check: rgba(220, 30, 30, 0.7);
+  --hl-valid-ring: rgba(0, 0, 0, 0.25);
+  --hl-capture: rgba(220, 30, 30, 0.35);
+  --piece-light: #ffffff;
+  --piece-dark: #0a0a0a;
+  --glow: none;
+}
+
+/* In stark theme, dark squares are dark, so light pieces are white,
+   and the light squares should show the dark pieces. We keep
+   --piece-light/--piece-dark purely as references and the symbol
+   class applies the right color based on piece color. */
+
+/* ============================================================
+   Base
+   ============================================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button {
+  font-family: inherit;
+}
+
+select {
+  font-family: inherit;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn-primary,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  background: var(--bg-app);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-panel);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-ghost.is-active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+}
+
+.btn-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* ============================================================
+   Select input
+   ============================================================ */
+.select-input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.select-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* ============================================================
+   Toggle switch
+   ============================================================ */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 999px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.toggle input:checked + .toggle-slider {
+  background: var(--accent);
+}
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
+/* ============================================================
+   Player bar
+   ============================================================ */
+.player-bar {
+  transition: all 0.2s ease;
+  position: relative;
+}
+.player-bar.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent),
+    0 4px 12px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.clock {
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+}
+.clock.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.clock.low {
+  color: #e22;
+  border-color: #e22;
+  animation: pulse-low 1.2s ease-in-out infinite;
+}
+@keyframes pulse-low {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.captures-inline {
+  font-size: 1.05rem;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+/* ============================================================
+   Board
+   ============================================================ */
+.board-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+
+.board-frame {
+  position: relative;
+  border-radius: 0.75rem;
+  padding: 0.6rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.board-body {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.board-labels {
+  display: grid;
+  flex: 0 0 auto;
+  font-family: "JetBrains Mono", monospace;
+}
+.board-labels-top,
+.board-labels-bottom {
+  grid-template-columns: repeat(8, 1fr);
+  padding: 0 1.1rem;
+}
+.board-labels-left,
+.board-labels-right {
+  grid-template-rows: repeat(8, 1fr);
+  width: 1.1rem;
+}
+
+[data-theme="cyber"] .board-frame {
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.08),
+    0 10px 30px rgba(0, 0, 0, 0.4);
+  border-color: var(--border);
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  user-select: none;
+  border-radius: 0.4rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.board-grid.rotated {
+  transform: rotate(180deg);
+}
+.board-grid.rotated .square .piece {
+  transform: rotate(180deg);
+}
+.board-grid.rotated .move-dot,
+.board-grid.rotated .capture-ring {
+  transform: rotate(180deg);
+}
+
+/* Coordinate labels positioned around the board (in .board-frame) */
+.coord {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.board-frame.show-coords .coord {
+  visibility: visible;
+}
+.board-frame:not(.show-coords) .coord {
+  visibility: hidden;
+}
+.board-labels-top .coord {
+  align-items: flex-end;
+  padding-bottom: 1px;
+}
+.board-labels-bottom .coord {
+  align-items: flex-start;
+  padding-top: 1px;
+}
+.board-labels-left .coord {
+  justify-content: flex-end;
+  padding-right: 4px;
+}
+.board-labels-right .coord {
+  justify-content: flex-start;
+  padding-left: 4px;
+}
+
+/* Square */
+.square {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.square.light {
+  background: var(--bg-square-light);
+}
+.square.dark {
+  background: var(--bg-square-dark);
+}
+
+.square.selected {
+  background: var(--hl-selected) !important;
+}
+.square.last-move {
+  background: var(--hl-lastmove) !important;
+}
+.square.in-check {
+  background: var(--hl-check) !important;
+  animation: check-flash 1.2s ease-in-out infinite;
+}
+@keyframes check-flash {
+  0%, 100% { filter: none; }
+  50% { filter: brightness(0.9); }
+}
+
+/* Move indicators */
+.move-dot {
+  position: absolute;
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  background: var(--hl-move-dot);
+  pointer-events: none;
+  opacity: 0.9;
+}
+.capture-ring {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  border: 4px solid var(--hl-capture);
+  pointer-events: none;
+}
+
+/* Piece */
+.piece {
+  font-size: clamp(2rem, 9vw, 4rem);
+  line-height: 1;
+  font-weight: 400;
+  position: relative;
+  z-index: 1;
+  transition: transform 0.15s ease;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 2px 4px var(--piece-shadow);
+  cursor: grab;
+  pointer-events: none; /* let square handle clicks */
+}
+
+.piece.white {
+  color: var(--piece-light);
+  text-shadow: 0 0 1px #000, 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+.piece.black {
+  color: var(--piece-dark);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.2),
+    0 2px 3px var(--piece-shadow);
+}
+
+/* In the stark theme, give every piece a strong outline so it stays
+   visible on both light and dark squares. */
+[data-theme="stark"] .piece.white {
+  color: #ffffff;
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0    0   2px rgba(0, 0, 0, 0.4);
+}
+[data-theme="stark"] .piece.black {
+  color: #0a0a0a;
+  text-shadow:
+    -1px -1px 0 #ffffff,
+     1px -1px 0 #ffffff,
+    -1px  1px 0 #ffffff,
+     1px  1px 0 #ffffff,
+     0    0   2px rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="cyber"] .piece {
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.3));
+}
+
+.square:hover .piece {
+  transform: scale(1.05);
+}
+.square.flash-move .piece {
+  animation: pop 0.25s ease;
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================
+   Move history panel
+   ============================================================ */
+.history-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.history-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.history-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.history-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#history table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+#history td {
+  padding: 0.25rem 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+#history td.move-num {
+  color: var(--text-muted);
+  width: 2.5rem;
+  font-weight: 500;
+}
+#history td.move-white,
+#history td.move-black {
+  cursor: pointer;
+  border-radius: 0.25rem;
+}
+#history td.move-white:hover,
+#history td.move-black:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+}
+#history td.last-move {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ============================================================
+   Status dot
+   ============================================================ */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  display: inline-block;
+}
+
+/* ============================================================
+   Modals
+   ============================================================ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+  animation: fade-in 0.2s ease;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.modal-backdrop.hidden {
+  display: none;
+}
+
+.modal-card {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 28rem;
+  width: calc(100% - 2rem);
+  text-align: center;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  animation: scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  display: inline-block;
+}
+
+.promotion-choices button {
+  width: 100%;
+  aspect-ratio: 1;
+  font-size: 2.5rem;
+  border-radius: 0.5rem;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.promotion-choices button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 1023px) {
+  main {
+    grid-template-columns: 1fr !important;
+  }
+  .board-frame {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .board-frame {
+    padding: 0.35rem;
+  }
+  .piece {
+    font-size: clamp(1.6rem, 11vw, 3.2rem);
+  }
+  .clock .font-mono {
+    font-size: 1.25rem !important;
+  }
+  .btn-primary span:last-child,
+  .btn-ghost span:last-child {
+    font-size: 0.78rem;
+  }
+}
+
+/* Hide AI controls when in PvP mode */
+body[data-mode="pvp"] #ai-controls {
+  display: none;
+}
+body[data-mode="ai"] #ai-controls {
+  display: block;
+}
+body[data-mode="pvp"] #rotate-label {
+  display: flex;
+}
+body[data-mode="ai"] #rotate-label {
+  display: none;
+}

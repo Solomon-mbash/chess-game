@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en" data-theme="classic">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%99%9E%3C/text%3E%3C/svg%3E" />
+    <title>Chess — Modern Web Edition</title>
+
+    <!-- Tailwind CSS via Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'monospace'],
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- chess.js engine (UMD build; exposes window.Chess) -->
+    <script src="https://cdn.jsdelivr.net/npm/chess.js@0.12.1/chess.min.js"></script>
+
+    <!-- App styles -->
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body
+    class="font-sans min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] transition-colors duration-300"
+  >
+    <!-- ============== APP SHELL ============== -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
+      <!-- Header -->
+      <header class="flex items-center justify-between mb-6 lg:mb-8">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-lg bg-[var(--accent)] flex items-center justify-center text-[var(--accent-foreground)] shadow-lg"
+          >
+            <span class="text-2xl leading-none">♞</span>
+          </div>
+          <div>
+            <h1 class="font-display text-xl sm:text-2xl font-bold tracking-tight">
+              Chess
+            </h1>
+            <p class="text-xs text-[var(--text-muted)] hidden sm:block">
+              Modern web edition
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="hidden md:flex items-center gap-2 text-xs text-[var(--text-muted)] font-mono"
+        >
+          <span class="status-dot" id="connection-dot"></span>
+          <span id="engine-status">Engine ready</span>
+        </div>
+      </header>
+
+      <!-- Main grid: Board + Side panel -->
+      <main
+        class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_420px] gap-6 lg:gap-8"
+      >
+        <!-- ============== BOARD COLUMN ============== -->
+        <section class="flex flex-col gap-4">
+          <!-- Top player bar (opponent) -->
+          <div
+            class="player-bar flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] bg-[var(--bg-panel)]"
+          >
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center text-2xl bg-[var(--bg-square-dark)]"
+              id="opponent-avatar"
+            >
+              ♚
+            </div>
+            <div class="flex-1 min-w-0">
+              <div
+                class="font-semibold text-sm truncate"
+                id="opponent-name"
+              >
+                Opponent
+              </div>
+              <div
+                class="text-xs text-[var(--text-muted)] flex items-center gap-2"
+              >
+                <span id="opponent-captures-inline" class="captures-inline">
+                </span>
+              </div>
+            </div>
+            <div class="clock text-right" id="clock-top">
+              <div class="font-mono text-2xl font-semibold tabular-nums">
+                10:00
+              </div>
+              <div class="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+                Black
+              </div>
+            </div>
+          </div>
+
+          <!-- The board -->
+          <div class="board-wrap" id="board-wrap">
+            <div class="board-frame show-coords" id="board-frame">
+              <div class="board-labels board-labels-top">
+                <span class="coord file">a</span>
+                <span class="coord file">b</span>
+                <span class="coord file">c</span>
+                <span class="coord file">d</span>
+                <span class="coord file">e</span>
+                <span class="coord file">f</span>
+                <span class="coord file">g</span>
+                <span class="coord file">h</span>
+              </div>
+              <div class="board-body">
+                <div class="board-labels board-labels-left">
+                  <span class="coord rank">8</span>
+                  <span class="coord rank">7</span>
+                  <span class="coord rank">6</span>
+                  <span class="coord rank">5</span>
+                  <span class="coord rank">4</span>
+                  <span class="coord rank">3</span>
+                  <span class="coord rank">2</span>
+                  <span class="coord rank">1</span>
+                </div>
+                <div class="board-grid" id="board" role="grid" aria-label="Chess board">
+                  <!-- Squares injected by JS -->
+                </div>
+                <div class="board-labels board-labels-right">
+                  <span class="coord rank">8</span>
+                  <span class="coord rank">7</span>
+                  <span class="coord rank">6</span>
+                  <span class="coord rank">5</span>
+                  <span class="coord rank">4</span>
+                  <span class="coord rank">3</span>
+                  <span class="coord rank">2</span>
+                  <span class="coord rank">1</span>
+                </div>
+              </div>
+              <div class="board-labels board-labels-bottom">
+                <span class="coord file">a</span>
+                <span class="coord file">b</span>
+                <span class="coord file">c</span>
+                <span class="coord file">d</span>
+                <span class="coord file">e</span>
+                <span class="coord file">f</span>
+                <span class="coord file">g</span>
+                <span class="coord file">h</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom player bar (you) -->
+          <div
+            class="player-bar active flex items-center gap-3 p-3 rounded-xl border border-[var(--border)] bg-[var(--bg-panel)]"
+            id="player-bar-bottom"
+          >
+            <div
+              class="w-10 h-10 rounded-full flex items-center justify-center text-2xl bg-[var(--bg-square-light)]"
+              id="player-avatar"
+            >
+              ♔
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-sm truncate" id="player-name">
+                You
+              </div>
+              <div
+                class="text-xs text-[var(--text-muted)] flex items-center gap-2"
+              >
+                <span id="player-captures-inline" class="captures-inline">
+                </span>
+              </div>
+            </div>
+            <div class="clock text-right" id="clock-bottom">
+              <div class="font-mono text-2xl font-semibold tabular-nums">
+                10:00
+              </div>
+              <div class="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+                White
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============== SIDE PANEL ============== -->
+        <aside class="flex flex-col gap-4">
+          <!-- Controls card -->
+          <div
+            class="rounded-xl border border-[var(--border)] bg-[var(--bg-panel)] p-4"
+          >
+            <h2
+              class="font-display text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3"
+            >
+              Game
+            </h2>
+
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <button class="btn-primary" data-mode="ai" id="btn-mode-ai">
+                <span class="btn-icon">🤖</span>
+                <span>vs Computer</span>
+              </button>
+              <button class="btn-ghost" data-mode="pvp" id="btn-mode-pvp">
+                <span class="btn-icon">👥</span>
+                <span>2 Players</span>
+              </button>
+            </div>
+
+            <div
+              id="ai-controls"
+              class="space-y-3 pt-3 border-t border-[var(--border)]"
+            >
+              <label class="block">
+                <span
+                  class="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider"
+                  >Difficulty</span
+                >
+                <select
+                  id="difficulty"
+                  class="select-input mt-1"
+                >
+                  <option value="easy">Easy — looks 1–2 ahead</option>
+                  <option value="medium" selected>Medium — looks 3 ahead</option>
+                  <option value="hard">Hard — looks 4+ ahead</option>
+                </select>
+              </label>
+
+              <label class="block">
+                <span
+                  class="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider"
+                  >You play as</span
+                >
+                <select id="player-color" class="select-input mt-1">
+                  <option value="w" selected>White (move first)</option>
+                  <option value="b">Black</option>
+                  <option value="random">Random</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[var(--border)]">
+              <button id="btn-undo" class="btn-ghost">
+                <span class="btn-icon">↶</span>
+                <span>Undo</span>
+              </button>
+              <button id="btn-reset" class="btn-ghost">
+                <span class="btn-icon">⟲</span>
+                <span>Reset</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Display card -->
+          <div
+            class="rounded-xl border border-[var(--border)] bg-[var(--bg-panel)] p-4"
+          >
+            <h2
+              class="font-display text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3"
+            >
+              Display
+            </h2>
+
+            <label class="block mb-3">
+              <span
+                class="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider"
+                >Theme</span
+              >
+              <select id="theme" class="select-input mt-1">
+                <option value="classic">Classic Wood</option>
+                <option value="cyber">Neo Cyber</option>
+                <option value="stark">Minimalist Stark</option>
+              </select>
+            </label>
+
+            <label
+              id="rotate-label"
+              class="flex items-center justify-between cursor-pointer p-2 rounded-md hover:bg-[var(--bg-app)] transition-colors"
+            >
+              <span class="text-sm">Auto-rotate board</span>
+              <span class="toggle">
+                <input type="checkbox" id="rotate-toggle" />
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+
+            <label
+              class="flex items-center justify-between cursor-pointer p-2 rounded-md hover:bg-[var(--bg-app)] transition-colors"
+            >
+              <span class="text-sm">Show coordinates</span>
+              <span class="toggle">
+                <input type="checkbox" id="coords-toggle" checked />
+                <span class="toggle-slider"></span>
+              </span>
+            </label>
+          </div>
+
+          <!-- Move history card -->
+          <div
+            class="rounded-xl border border-[var(--border)] bg-[var(--bg-panel)] p-4 flex-1 min-h-[260px] flex flex-col"
+          >
+            <h2
+              class="font-display text-sm font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3"
+            >
+              Moves
+            </h2>
+            <div
+              id="history"
+              class="font-mono text-sm flex-1 overflow-y-auto history-scroll"
+            >
+              <div class="text-[var(--text-muted)] italic text-xs py-4 text-center">
+                No moves yet — make your first move!
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <footer
+        class="mt-10 pt-6 border-t border-[var(--border)] text-center text-xs text-[var(--text-muted)]"
+      >
+        Built with
+        <a
+          href="https://github.com/jhlywa/chess.js"
+          class="text-[var(--accent)] hover:underline"
+          target="_blank"
+          rel="noopener"
+          >chess.js</a
+        >
+        · No build step required
+      </footer>
+    </div>
+
+    <!-- ============== GAME OVER MODAL ============== -->
+    <div
+      id="modal"
+      class="modal-backdrop hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div class="modal-card">
+        <div class="modal-icon" id="modal-icon">♚</div>
+        <h2 id="modal-title" class="font-display text-2xl font-bold mb-1">
+          Checkmate
+        </h2>
+        <p id="modal-message" class="text-[var(--text-muted)] mb-6">
+          White wins by checkmate.
+        </p>
+        <div class="flex gap-2">
+          <button id="modal-close" class="btn-ghost flex-1">Review</button>
+          <button id="modal-newgame" class="btn-primary flex-1">New Game</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== PROMOTION MODAL ============== -->
+    <div
+      id="promotion-modal"
+      class="modal-backdrop hidden"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-card max-w-sm">
+        <h2 class="font-display text-lg font-bold mb-4">Promote pawn</h2>
+        <div id="promotion-choices" class="grid grid-cols-4 gap-2">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- App scripts (modules) -->
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
