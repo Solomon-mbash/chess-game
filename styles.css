@@ -6,15 +6,15 @@
 
 :root {
   /* App surfaces */
-  --bg-app: #f5efe6;
-  --bg-panel: #ffffff;
-  --text-primary: #1f1a14;
-  --text-muted: #7a6f60;
-  --border: #e6dccb;
+  --bg-app: #2b2018;
+  --bg-panel: #3d2f22;
+  --text-primary: #f0e6d2;
+  --text-muted: #a89578;
+  --border: #5a4a38;
 
   /* Accent */
-  --accent: #8b5a2b;
-  --accent-foreground: #ffffff;
+  --accent: #d4a574;
+  --accent-foreground: #1a1208;
 
   /* Board squares */
   --bg-square-light: #f0d9b5;
@@ -41,13 +41,13 @@
 
 /* ---- Classic Wood ---- */
 [data-theme="classic"] {
-  --bg-app: #f5efe6;
-  --bg-panel: #ffffff;
-  --text-primary: #1f1a14;
-  --text-muted: #7a6f60;
-  --border: #e6dccb;
-  --accent: #8b5a2b;
-  --accent-foreground: #ffffff;
+  --bg-app: #2b2018;
+  --bg-panel: #3d2f22;
+  --text-primary: #f0e6d2;
+  --text-muted: #a89578;
+  --border: #5a4a38;
+  --accent: #d4a574;
+  --accent-foreground: #1a1208;
   --bg-square-light: #f0d9b5;
   --bg-square-dark: #b58863;
   --hl-selected: rgba(255, 235, 130, 0.7);
@@ -84,11 +84,11 @@
 
 /* ---- Minimalist Stark ---- */
 [data-theme="stark"] {
-  --bg-app: #ffffff;
-  --bg-panel: #ffffff;
+  --bg-app: #b8b8b8;
+  --bg-panel: #a8a8a8;
   --text-primary: #0a0a0a;
-  --text-muted: #737373;
-  --border: #e5e5e5;
+  --text-muted: #3a3a3a;
+  --border: #7a7a7a;
   --accent: #0a0a0a;
   --accent-foreground: #ffffff;
   --bg-square-light: #ffffff;
