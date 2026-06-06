@@ -33,6 +33,17 @@
     <!-- chess.js engine (UMD build; exposes window.Chess) -->
     <script src="https://cdn.jsdelivr.net/npm/chess.js@0.12.1/chess.min.js"></script>
 
+    <!-- ES module import map (three.js + OrbitControls + GSAP) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/",
+          "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.5/index.js"
+        }
+      }
+    </script>
+
     <!-- App styles -->
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -107,53 +118,64 @@
             </div>
           </div>
 
-          <!-- The board -->
+          <!-- The board (2D + 3D, toggled by JS) -->
           <div class="board-wrap" id="board-wrap">
-            <div class="board-frame show-coords" id="board-frame">
-              <div class="board-labels board-labels-top">
-                <span class="coord file">a</span>
-                <span class="coord file">b</span>
-                <span class="coord file">c</span>
-                <span class="coord file">d</span>
-                <span class="coord file">e</span>
-                <span class="coord file">f</span>
-                <span class="coord file">g</span>
-                <span class="coord file">h</span>
+            <div class="board-stage" id="board-stage" data-view="2d">
+              <!-- 2D board -->
+              <div class="board-frame show-coords" id="board-frame">
+                <div class="board-labels board-labels-top">
+                  <span class="coord file">a</span>
+                  <span class="coord file">b</span>
+                  <span class="coord file">c</span>
+                  <span class="coord file">d</span>
+                  <span class="coord file">e</span>
+                  <span class="coord file">f</span>
+                  <span class="coord file">g</span>
+                  <span class="coord file">h</span>
+                </div>
+                <div class="board-body">
+                  <div class="board-labels board-labels-left">
+                    <span class="coord rank">8</span>
+                    <span class="coord rank">7</span>
+                    <span class="coord rank">6</span>
+                    <span class="coord rank">5</span>
+                    <span class="coord rank">4</span>
+                    <span class="coord rank">3</span>
+                    <span class="coord rank">2</span>
+                    <span class="coord rank">1</span>
+                  </div>
+                  <div class="board-grid" id="board" role="grid" aria-label="Chess board">
+                    <!-- Squares injected by JS -->
+                  </div>
+                  <div class="board-labels board-labels-right">
+                    <span class="coord rank">8</span>
+                    <span class="coord rank">7</span>
+                    <span class="coord rank">6</span>
+                    <span class="coord rank">5</span>
+                    <span class="coord rank">4</span>
+                    <span class="coord rank">3</span>
+                    <span class="coord rank">2</span>
+                    <span class="coord rank">1</span>
+                  </div>
+                </div>
+                <div class="board-labels board-labels-bottom">
+                  <span class="coord file">a</span>
+                  <span class="coord file">b</span>
+                  <span class="coord file">c</span>
+                  <span class="coord file">d</span>
+                  <span class="coord file">e</span>
+                  <span class="coord file">f</span>
+                  <span class="coord file">g</span>
+                  <span class="coord file">h</span>
+                </div>
               </div>
-              <div class="board-body">
-                <div class="board-labels board-labels-left">
-                  <span class="coord rank">8</span>
-                  <span class="coord rank">7</span>
-                  <span class="coord rank">6</span>
-                  <span class="coord rank">5</span>
-                  <span class="coord rank">4</span>
-                  <span class="coord rank">3</span>
-                  <span class="coord rank">2</span>
-                  <span class="coord rank">1</span>
+
+              <!-- 3D canvas (mounted lazily, hidden by default via CSS) -->
+              <div class="board-3d-wrap" id="board-3d-wrap">
+                <canvas id="board-3d" aria-label="3D chess board"></canvas>
+                <div class="board-3d-hint" id="board-3d-hint">
+                  <span>Drag to orbit · Right-drag to pan · Wheel to zoom</span>
                 </div>
-                <div class="board-grid" id="board" role="grid" aria-label="Chess board">
-                  <!-- Squares injected by JS -->
-                </div>
-                <div class="board-labels board-labels-right">
-                  <span class="coord rank">8</span>
-                  <span class="coord rank">7</span>
-                  <span class="coord rank">6</span>
-                  <span class="coord rank">5</span>
-                  <span class="coord rank">4</span>
-                  <span class="coord rank">3</span>
-                  <span class="coord rank">2</span>
-                  <span class="coord rank">1</span>
-                </div>
-              </div>
-              <div class="board-labels board-labels-bottom">
-                <span class="coord file">a</span>
-                <span class="coord file">b</span>
-                <span class="coord file">c</span>
-                <span class="coord file">d</span>
-                <span class="coord file">e</span>
-                <span class="coord file">f</span>
-                <span class="coord file">g</span>
-                <span class="coord file">h</span>
               </div>
             </div>
           </div>
@@ -300,6 +322,35 @@
                 <span class="toggle-slider"></span>
               </span>
             </label>
+
+            <div
+              class="segmented mt-3 pt-3 border-t border-[var(--border)]"
+              role="group"
+              aria-label="View"
+            >
+              <span
+                class="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider block mb-2"
+                >View</span
+              >
+              <div class="segmented-track">
+                <button
+                  type="button"
+                  class="segmented-btn active"
+                  data-view="2d"
+                  id="view-2d"
+                >
+                  2D
+                </button>
+                <button
+                  type="button"
+                  class="segmented-btn"
+                  data-view="3d"
+                  id="view-3d"
+                >
+                  3D
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Move history card -->

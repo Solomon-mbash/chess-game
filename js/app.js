@@ -10,6 +10,7 @@ import { HistoryView } from "./history.js";
 import { Clock } from "./clock.js";
 import { pickMove } from "./ai.js";
 import { $ } from "./utils.js";
+import { View3D } from "./3d/view3d.js";
 
 /* =====================================================
    State
@@ -24,6 +25,7 @@ const state = {
   aiThinking: false,
   pendingPromotion: null, // { from, to } when waiting on promotion choice
   lastMove: null, // {from,to}
+  view3d: false, // true when the 3D view is active
 };
 
 const els = {
@@ -56,6 +58,10 @@ const els = {
   modalNewGame: $("#modal-newgame"),
   promotionModal: $("#promotion-modal"),
   promotionChoices: $("#promotion-choices"),
+  board3d: $("#board-3d"),
+  boardStage: $("#board-stage"),
+  view2d: $("#view-2d"),
+  view3dBtn: $("#view-3d"),
 };
 els.playerBarTop = els.playerBarBottom.previousElementSibling;
 
@@ -82,6 +88,9 @@ const clock = new Clock(
   (winnerName) => showGameOver(`${winnerName} wins on time!`, "⏱")
 );
 
+// 3D view is mounted lazily on first toggle to 3D.
+let view3dInstance = null;
+
 /* =====================================================
    Helpers
    ===================================================== */
@@ -107,7 +116,7 @@ function topColor() {
 function applyMove(move) {
   const result = state.game.move(move);
   if (!result) return;
-  state.lastMove = { from: result.from, to: result.to };
+  state.lastMove = { from: result.from, to: result.to, color: result.color };
   historyView.add(result);
   boardView.flashMove(boardView.algebraicToIndex(result.to));
   // In PvP mode with the rotate toggle on, flip the board so the
@@ -161,6 +170,37 @@ function render() {
   if (state.mode === "ai" && !isHumanTurn && !state.game.game_over()) {
     scheduleAIMove();
   }
+
+  // ---- 3D view sync (only if mounted) ----
+  if (view3dInstance?.mounted) {
+    view3dInstance.sync(state);
+    view3dInstance.setLastMove(state.lastMove);
+    // Camera follows the side that just moved
+    const camColor = state.lastMove?.color ?? "w";
+    view3dInstance.setOrientation(camColor);
+    // Re-apply selection so a piece stays lifted
+    if (boardView.selected != null) {
+      view3dInstance.setSelection(boardView.selected);
+    }
+    // Check flash
+    if (state.game.in_check() && !state.game.in_checkmate()) {
+      const turn2 = state.game.turn();
+      const board2 = state.game.board();
+      let kingIdx2 = null;
+      outer: for (let r = 0; r < 8; r++) {
+        for (let f = 0; f < 8; f++) {
+          const p = board2[r][f];
+          if (p && p.type === "k" && p.color === turn2) {
+            kingIdx2 = r * 8 + f;
+            break outer;
+          }
+        }
+      }
+      view3dInstance.flashKingCheck(kingIdx2);
+    } else {
+      view3dInstance.flashKingCheck(null);
+    }
+  }
 }
 
 /* =====================================================
@@ -184,17 +224,34 @@ function handleSquareSelect(sqIndex) {
   if (piece && piece.color === turn) {
     if (state.mode === "ai" && piece.color !== state.humanColor) {
       boardView.clearSelection();
+      view3dInstance?.setSelection(null);
+      view3dInstance?.setLegalTargets([]);
       return;
     }
     // chess.js wants algebraic names for the square option.
     const moves = state.game.moves({ square: boardView.toAlgebraic(sqIndex), verbose: true });
     if (moves.length === 0) {
       boardView.clearSelection();
+      view3dInstance?.setSelection(null);
+      view3dInstance?.setLegalTargets([]);
       return;
     }
     boardView.setLegalMoves(sqIndex, moves);
+    if (view3dInstance?.mounted) {
+      view3dInstance.setSelection(sqIndex);
+      view3dInstance.setLegalTargets(
+        moves.map((m) => ({
+          to: boardView.algebraicToIndex(m.to),
+          capture: !!m.captured,
+        }))
+      );
+    }
   } else {
     boardView.clearSelection();
+    if (view3dInstance?.mounted) {
+      view3dInstance.setSelection(null);
+      view3dInstance.setLegalTargets([]);
+    }
   }
 }
 
@@ -495,8 +552,60 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "Escape") {
     closePromotionModal();
     boardView.clearSelection();
+    view3dInstance?.setSelection(null);
+    view3dInstance?.setLegalTargets([]);
   }
 });
+
+/* =====================================================
+   3D view toggle
+   ===================================================== */
+function setView(view) {
+  const want3d = view === "3d";
+  if (state.view3d === want3d) return;
+  state.view3d = want3d;
+  els.boardStage.dataset.view = want3d ? "3d" : "2d";
+  els.view2d.classList.toggle("active", !want3d);
+  els.view3dBtn.classList.toggle("active", want3d);
+
+  if (want3d) {
+    if (!view3dInstance) {
+      view3dInstance = new View3D(els.board3d);
+      view3dInstance.onSquareClick(handle3DClick);
+    }
+    view3dInstance.mount();
+    // Clear the 2D selection so it doesn't bleed into 3D.
+    boardView.clearSelection();
+    render();
+  } else {
+    view3dInstance?.unmount();
+    // Re-render 2D so it shows the current state.
+    render();
+  }
+}
+
+function handle3DClick(hit) {
+  if (!hit) {
+    boardView.clearSelection();
+    view3dInstance?.setSelection(null);
+    view3dInstance?.setLegalTargets([]);
+    return;
+  }
+  if (hit.kind === "piece") {
+    handleSquareSelect(hit.square);
+  } else if (hit.kind === "square") {
+    if (view3dInstance?.selected != null) {
+      handleSquareMove(view3dInstance.selected, hit.square);
+    } else {
+      boardView.clearSelection();
+      view3dInstance?.setSelection(null);
+      view3dInstance?.setLegalTargets([]);
+    }
+  }
+}
+
+els.view2d.addEventListener("click", () => setView("2d"));
+els.view3dBtn.addEventListener("click", () => setView("3d"));
 
 /* =====================================================
    Bootstrap
@@ -507,4 +616,4 @@ boardView.setShowCoords(state.showCoords);
 newGame();
 
 /* expose for debugging */
-window.__chess = { state, boardView, historyView, clock, applyMove };
+window.__chess = { state, boardView, historyView, clock, applyMove, view3dInstance: () => view3dInstance };

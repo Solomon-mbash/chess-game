@@ -261,6 +261,44 @@ select {
 }
 
 /* ============================================================
+   Segmented control (2D / 3D view toggle)
+   ============================================================ */
+.segmented-track {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.2rem;
+}
+
+.segmented-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.segmented-btn:hover {
+  color: var(--text-primary);
+}
+
+.segmented-btn.active {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08),
+    0 0 0 1px var(--border);
+}
+
+/* ============================================================
    Player bar
    ============================================================ */
 .player-bar {
@@ -306,6 +344,72 @@ select {
   display: flex;
   justify-content: center;
   padding: 0;
+}
+
+.board-stage {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+}
+
+.board-stage[data-view="2d"] .board-3d-wrap {
+  display: none !important;
+}
+
+.board-stage[data-view="3d"] .board-frame {
+  display: none !important;
+}
+
+.board-3d-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1a2230 0%, #0a0e18 100%);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+#board-3d {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+#board-3d:active {
+  cursor: grabbing;
+}
+
+.board-3d-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.board-stage[data-view="3d"] .board-3d-hint {
+  opacity: 1;
+  animation: hint-fade 6s ease 1.5s forwards;
+}
+
+@keyframes hint-fade {
+  to {
+    opacity: 0;
+  }
 }
 
 .board-frame {

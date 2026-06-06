@@ -2,17 +2,22 @@
 
 A fully-polished, responsive chess web app built with vanilla JavaScript, [chess.js](https://github.com/jhlywa/chess.js) for rules, and Tailwind CSS for layout. Play against a built-in engine at three difficulty levels, or locally against a friend. Features three distinct visual themes, drag-and-drop or click input, live move history, captured-piece shelf, chess clocks, undo/reset, board rotation, and a clean game-over modal.
 
-![Game Over Modal](https://github.com/Solomon-mbash/chess-game)
+The app also ships with a **fully interactive 3D mode** powered by [Three.js](https://threejs.org/) and [GSAP](https://gsap.com/) — orbit the camera, see moves animate, and watch captured pieces slide to a graveyard. Toggle between 2D and 3D in the Display panel; both views share the same game state.
+
+![3D View](https://github.com/Solomon-mbash/chess-game)
 
 ---
 
 ## Features
 
+- **Two render modes** (toggle in the Display card)
+  - **2D** — the classic wood/cyber/stark board, fast and crisp
+  - **3D** — WebGL board with `OrbitControls`, procedural `LatheGeometry` pieces, and GSAP-driven move/capture/selection animations. Camera auto-flips to the active side after each move.
 - **Game modes**
   - **vs AI** — three difficulty levels (Easy, Medium, Hard) with alpha-beta search and piece-square tables
   - **Local PvP** — two players on the same device
   - Play as **White** or **Black** (board rotates 180°)
-- **Three visual themes** (switchable at runtime)
+- **Three visual themes** (2D only — 3D uses its own PBR materials; switchable at runtime)
   - **Classic Wood** — warm, traditional browns and creams
   - **Neo Cyber** — neon glow on a deep navy field
   - **Minimalist Stark** — high-contrast black/white with strong piece outlines
@@ -68,15 +73,33 @@ Visit <http://127.0.0.1:8765/> in your browser.
 
 ---
 
+## 3D View
+
+Switch to 3D with the **View: 2D / 3D** toggle in the Display card. The same game state drives both renderers.
+
+- **Camera** — `PerspectiveCamera` with `OrbitControls`. Left-drag to orbit, right-drag to pan, mouse-wheel to zoom. Damping is enabled for fluid motion.
+- **Pieces** — built procedurally with Three.js primitives: `LatheGeometry` for the pawn, bishop, queen and king bodies; cylinders + boxes for rooks; stylized boxes for the knight. Two PBR materials (ivory `#f3e9d2` and ebony `#2a2520`).
+- **Animations** (GSAP)
+  - **Move** — 0.4 s `power2.inOut` slide from old square to new with a 0.6-unit y-arc.
+  - **Capture** — 0.55 s `back.out` slide to a side "graveyard" shelf, then scale down and remove.
+  - **Selection** — selected piece lifts 0.18 units; move dots pulse.
+  - **Camera flip** — after every move the board group rotates 180° and the camera tweens to the opposite side (1.0 s `power2.inOut`), so you're always looking from the side that just moved.
+  - **Check** — red flash on the king's square.
+- **Lighting** — `HemisphereLight` + key `DirectionalLight` casting soft 2048² shadows, plus a subtle blue fill.
+- **Performance** — the render loop pauses when the view is hidden, and one material is shared per color (so 32 pieces = 2 materials).
+
+The 3D view has its own data bridge (`js/3d/adapter.js`) that parses a FEN/position into `{square, kind, color}` records. The `chessboard3.js` library is detected at runtime; if it can't load on modern Three.js (r80 assets, no `BufferGeometry`), the adapter falls back to a hand-rolled FEN parser — the rest of the code is identical either way.
+
 ## How to Play
 
 | Action            | How                                                              |
 | ----------------- | ---------------------------------------------------------------- |
-| Select a piece    | Click it, or start dragging it                                   |
+| Select a piece    | Click it (2D + 3D) or start dragging it (2D only)                |
 | See legal moves   | Selected piece shows dots on empty squares, rings on captures    |
-| Make a move       | Click a target square, or drop the dragged piece on one          |
-| Deselect          | Click the same piece again, or click an empty non-target square  |
+| Make a move       | Click a target square (2D + 3D), or drop the dragged piece (2D)  |
+| Deselect          | Click the same piece again, or press **Esc**                     |
 | Promote a pawn    | Choose Queen / Rook / Bishop / Knight in the modal that appears  |
+| Orbit 3D camera   | Left-drag = orbit, right-drag = pan, wheel = zoom (3D only)      |
 | Undo a move       | Click **Undo** (also undoes the AI's reply)                      |
 | Start over        | Click **Reset**                                                  |
 | Change mode       | Toggle **vs AI** / **Local PvP** in the side panel               |
@@ -94,15 +117,21 @@ The game-over modal appears automatically when a game ends. Click **Review** to 
 
 ```
 chess-game/
-├── index.html         # App shell, layout, theme config, modal markup
-├── styles.css         # Full theme engine + all component styles
+├── index.html         # App shell, layout, theme config, modal markup, 3D canvas
+├── styles.css         # Full theme engine + all component styles + 3D stage
 └── js/
     ├── utils.js       # Shared helpers: squareName, squareIndex, glyphs, etc.
     ├── board.js       # BoardView: renders 8x8 grid, handles click + drag input
     ├── ai.js          # Negamax + alpha-beta + MVV-LVA + PSTs
     ├── history.js     # HistoryView: SAN list + captured-piece shelf
     ├── clock.js       # Chess clock (bound to player bars)
-    └── app.js         # Controller: wires every subsystem together
+    ├── app.js         # Controller: wires every subsystem together
+    └── 3d/            # 3D view (Three.js + GSAP)
+        ├── adapter.js   # chessboard3.js shim + hand-rolled FEN parser
+        ├── pieces.js    # Procedural LatheGeometry / Box / Cylinder pieces
+        ├── board3d.js   # 8x8 mesh grid + frame + highlight overlays
+        ├── scene.js     # Scene, camera, lights, renderer, OrbitControls
+        └── view3d.js    # Public API mirroring BoardView (sync/setSelection/...)
 ```
 
 ### Module Responsibilities
@@ -177,6 +206,9 @@ The **Stark** theme uses `text-shadow` strokes on piece glyphs so the same white
 - **Tailwind CSS** — layout, via the Play CDN (dev-friendly; for production swap to the Tailwind CLI or PostCSS)
 - **Vanilla JavaScript (ES2020 modules)** — no framework, no build step
 - **[chess.js 0.12.1](https://github.com/jhlywa/chess.js)** — UMD build from jsDelivr; all rule logic delegated to it (legal moves, check, checkmate, stalemate, threefold repetition, 50-move rule, insufficient material, FEN, SAN, promotion)
+- **[Three.js r184](https://threejs.org/)** — ESM build via import map; used by the 3D view
+- **[GSAP 3.12](https://gsap.com/)** — ESM build; drives the move, capture, selection, and camera animations
+- **chessboard3.js (optional)** — detected at runtime; falls back to the hand-rolled FEN parser in `js/3d/adapter.js` if the lib fails to load on modern Three.js
 - **Google Fonts** — Inter (body), Space Grotesk (headings), JetBrains Mono (clocks + history)
 - **No build tools, no dependencies to install**
 
